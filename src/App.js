@@ -18,7 +18,7 @@ function App() {
       });
 
       setAnswer(response.data.answer);
-      setRecommendations(response.data.recommendations);
+      setRecommendations(response.data.recommendations || []);
     } catch (error) {
       console.error('Error submitting question:', error);
     }
@@ -26,7 +26,9 @@ function App() {
 
   const generateQuiz = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/quiz/');
+      const response = await axios.post('http://127.0.0.1:8000/quiz/', {
+        topic: question || 'general',
+      });
       setQuiz(response.data.quiz);
     } catch (error) {
       console.error('Error generating quiz:', error);
@@ -35,12 +37,25 @@ function App() {
 
   const getRecommendations = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/recommend/');
-      setRecommendations(response.data.recommendations);
+      const response = await axios.post('http://127.0.0.1:8000/recommend/', {
+        history: [question],
+      });
+  
+      const recs = response.data.recommendations;
+  
+      if (Array.isArray(recs)) {
+        setRecommendations(recs);
+      } else if (typeof recs === 'string') {
+        setRecommendations([recs]); // wrap single string as array
+      } else {
+        setRecommendations([]);
+      }
     } catch (error) {
       console.error('Error getting recommendations:', error);
+      setRecommendations([]);
     }
   };
+  
 
   const logout = () => {
     setUserLoggedIn(false);
@@ -105,6 +120,18 @@ function App() {
         {/* Display Quiz */}
         <h2>Quiz:</h2>
         <pre>{quiz}</pre>
+
+        {/* Display Recommendations */}
+        {recommendations.length > 0 && (
+          <div className="recommendation-box">
+            <h2>Recommendations:</h2>
+            <ul>
+              {recommendations.map((rec, index) => (
+                <li key={index}>{rec}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Logout Button */}
